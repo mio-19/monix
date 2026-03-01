@@ -1,5 +1,8 @@
 = MoniXOS
 
+This project, including this README, contains significant LLM-generated content.
+Review code, docs, and configuration carefully before relying on them.
+
 MoniXOS is a fork of https://github.com/mobile-nixos/mobile-nixos[mobile-nixos].
 
 This fork restores vendor-based device support that was removed upstream in commit `1fd0839a103c6f882ffa3b51165be5cb6ad6ed50` (PR #645).
