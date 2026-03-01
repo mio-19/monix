@@ -17,6 +17,7 @@ let
     cfg.qualcomm-msm8998.enable
     cfg.qualcomm-sc7180.enable
     cfg.qualcomm-sdm660.enable
+    cfg.qualcomm-sdm429w.enable
     cfg.qualcomm-sdm845.enable
     cfg.qualcomm-sm6125.enable
     cfg.qualcomm-apq8064-1aa.enable
@@ -64,6 +65,11 @@ in
       default = false;
       description = "enable when SOC is SDM660";
     };
+    hardware.socs.qualcomm-sdm429w.enable = mkOption {
+      type = types.bool;
+      default = false;
+      description = "enable when SOC is SDM429W";
+    };
     hardware.socs.qualcomm-sdm845.enable = mkOption {
       type = types.bool;
       default = false;
@@ -109,6 +115,11 @@ in
     }
     {
       mobile = mkIf cfg.qualcomm-sdm660.enable {
+        system.system = "aarch64-linux";
+      };
+    }
+    {
+      mobile = mkIf cfg.qualcomm-sdm429w.enable {
         system.system = "aarch64-linux";
       };
     }

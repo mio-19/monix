@@ -3,3 +3,25 @@
 MoniXOS is a fork of https://github.com/mobile-nixos/mobile-nixos[mobile-nixos].
 
 This fork restores vendor-based device support that was removed upstream in commit `1fd0839a103c6f882ffa3b51165be5cb6ad6ed50` (PR #645).
+
+== AsteroidOS Bring-up
+
+This fork is also our current attempt to bring AsteroidOS pieces into the
+current Mobile NixOS-style tree:
+
+* AsteroidOS boot integration
+* AsteroidOS device support
+* AsteroidOS UI stack
+* Fossil Gen 6 device target: `hoki`
+
+AsteroidOS and related upstream source pins are tracked with `nvfetcher`:
+
+* `nvfetcher.toml`
+* `sources/generated.nix` (generated)
+* `sources/default.nix` (consumed by `devices/hoki`)
+
+To update pinned sources:
+
+----
+bin/update-asteroidos-sources
+----

@@ -22,6 +22,7 @@ pkgs.mkShell {
     lz4                       # Decompress image files
     mkbootimg                 # Pack and unpack boot images
     binwalk                   # Search a binary image for embedded files
+    nvfetcher                 # Update pinned AsteroidOS source definitions
     ubootTools                # A couple useful utilities
   ];
 }
