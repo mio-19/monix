@@ -4,7 +4,7 @@
 , ...
 }:
 
-mobile-nixos.kernel-builder-gcc49 {
+mobile-nixos.kernel-builder {
   configfile = ./config.aarch64;
 
   version = "3.18.91";

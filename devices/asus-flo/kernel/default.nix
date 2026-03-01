@@ -4,7 +4,7 @@
 , ...
 }:
 
-mobile-nixos.kernel-builder-gcc6 {
+mobile-nixos.kernel-builder {
   version = "3.4.113";
   configfile = ./config.armv7;
 

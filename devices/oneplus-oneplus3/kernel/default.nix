@@ -5,7 +5,7 @@
 , ...
 }:
 
-mobile-nixos.kernel-builder-gcc6 {
+mobile-nixos.kernel-builder {
   configfile = ./config.aarch64;
 
   version = "3.18.140";

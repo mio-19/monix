@@ -33,7 +33,7 @@ let
   '';
 in
   
-mobile-nixos.kernel-builder-clang_9 {
+mobile-nixos.kernel-builder-clang {
   version = "4.14.194";
   configfile = ./config.aarch64;
 

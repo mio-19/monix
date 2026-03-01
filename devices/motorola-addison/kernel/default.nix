@@ -14,7 +14,7 @@
 #  mobile.system.system = lib.mkForce "armv7l-linux";
 #
 
-mobile-nixos.kernel-builder-gcc6 {
+mobile-nixos.kernel-builder {
   version = "3.18.71";
   configfile = ./. + "/config.${stdenv.hostPlatform.parsed.cpu.name}";
 

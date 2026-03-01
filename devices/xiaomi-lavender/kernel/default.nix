@@ -14,7 +14,7 @@
 #  * Will not build or boot on all compilers.
 #
 
-mobile-nixos.kernel-builder-gcc49 {
+mobile-nixos.kernel-builder {
   version = "4.4.153";
   configfile = ./config.aarch64;
 

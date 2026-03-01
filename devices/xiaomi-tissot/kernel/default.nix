@@ -2,7 +2,7 @@
 , fetchFromGitHub
 , ...
 }:
-mobile-nixos.kernel-builder-gcc6 {
+mobile-nixos.kernel-builder {
   version = "3.18.140";
   configfile = ./config.aarch64;
   src = fetchFromGitHub {

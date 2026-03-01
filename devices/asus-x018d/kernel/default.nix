@@ -1,12 +1,12 @@
 {
   mobile-nixos
 , fetchFromGitHub
-, python2
+, python3
 , buildPackages
 , ...
 }:
 
-mobile-nixos.kernel-builder-gcc49 {
+mobile-nixos.kernel-builder {
   version = "3.18.35";
   configfile = ./config.aarch64;
 
@@ -29,7 +29,7 @@ mobile-nixos.kernel-builder-gcc49 {
 
   nativeBuildInputs = [
     # Needed for tools/dct/DrvGen.py
-    python2
+    python3
   ];
 
   isImageGzDtb = true;
