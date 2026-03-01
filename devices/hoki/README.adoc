@@ -1,5 +1,7 @@
 = Fossil Gen 6 (`hoki`)
 
+== Device-specific notes
+
 This target is an initial AsteroidOS-based bring-up for `hoki`.
 
 Kernel source and patch set are reused from:
