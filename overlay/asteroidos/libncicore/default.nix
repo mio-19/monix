@@ -2,7 +2,7 @@
   lib,
   stdenv,
   fetchFromGitHub,
-  pkg-config,
+  buildPackages,
   glib,
   libglibutil,
   asteroidosMetaAsteroid,
@@ -23,8 +23,14 @@ stdenv.mkDerivation rec {
     "${asteroidosMetaAsteroid}/recipes-nemomobile/libnci/libncicore/0001-Makefile-Allow-for-CC-to-be-overridden.patch"
   ];
 
+  postPatch = ''
+    # Use stdenv-provided cross-aware pkg-config wrapper.
+    substituteInPlace Makefile unit/common/Makefile \
+      --replace-fail "pkg-config" "$PKG_CONFIG"
+  '';
+
   nativeBuildInputs = [
-    pkg-config
+    buildPackages.pkg-config
   ];
 
   buildInputs = [
@@ -34,18 +40,19 @@ stdenv.mkDerivation rec {
 
   makeFlags = [
     "KEEP_SYMBOLS=1"
-    "LIBDIR=${placeholder "out"}/lib"
+    "LIBDIR=lib"
+    "PKG_CONFIG=${buildPackages.pkg-config}/bin/pkg-config"
   ];
 
   buildPhase = ''
     runHook preBuild
-    make release pkgconfig
+    make $makeFlags release pkgconfig
     runHook postBuild
   '';
 
   installPhase = ''
     runHook preInstall
-    make install install-dev DESTDIR=$out
+    make $makeFlags install install-dev DESTDIR=$out
     runHook postInstall
   '';
 
