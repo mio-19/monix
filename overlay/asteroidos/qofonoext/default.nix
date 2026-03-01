@@ -1,6 +1,7 @@
 {
   lib,
   stdenv,
+  buildPackages,
   fetchFromGitHub,
   pkg-config,
   qt5,
@@ -24,8 +25,11 @@ stdenv.mkDerivation rec {
   ];
 
   buildInputs = [
-    qt5.qtbase
     libqofono
+  ];
+
+  depsBuildBuild = lib.optionals (stdenv.buildPlatform != stdenv.hostPlatform) [
+    buildPackages.stdenv.cc
   ];
 
   dontWrapQtApps = true;
@@ -34,9 +38,25 @@ stdenv.mkDerivation rec {
     runHook preConfigure
 
     sed -i 's@$$\[QT_INSTALL_LIBS\]@/usr/lib@g' src/src.pro
-    export PKG_CONFIG_PATH="${libqofono}/usr/lib/pkgconfig''${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    # Cross qmake does not resolve qofono-qt5.pc reliably via PKGCONFIG.
+    # Inject include/lib paths directly and drop the PKGCONFIG probes.
+    sed -i '/^PKGCONFIG += qofono-qt/d' src/src.pro plugin/plugin.pro
+    sed -i "1iINCLUDEPATH += ${libqofono}/usr/include/qofono-qt5" src/src.pro plugin/plugin.pro
+    sed -i "1iLIBS += -L${libqofono}/usr/lib -lqofono-qt5" src/src.pro plugin/plugin.pro
 
-    qmake src/src.pro
+    ${buildPackages.qt5.qtbase.dev}/bin/qmake src/src.pro \
+      "QMAKE_CC=${stdenv.cc.targetPrefix}gcc" \
+      "QMAKE_CXX=${stdenv.cc.targetPrefix}g++" \
+      "QMAKE_LINK=${stdenv.cc.targetPrefix}g++" \
+      "QMAKE_AR=${stdenv.cc.targetPrefix}ar cqs" \
+      "QMAKE_CFLAGS+=-I${qt5.qtbase.dev}/include" \
+      "QMAKE_CXXFLAGS+=-I${qt5.qtbase.dev}/include" \
+      "QMAKE_INCDIR_QT=${qt5.qtbase.dev}/include" \
+      "QMAKE_LIBDIR_QT=${qt5.qtbase.out}/lib" \
+      "QMAKE_LIBS_QT=${qt5.qtbase.out}/lib/libQt5DBus.so ${qt5.qtbase.out}/lib/libQt5Core.so -lpthread"
+
+    # qmake still injects native Qt runtime paths in cross mode; rewrite to target Qt libs.
+    sed -i "s|${buildPackages.qt5.qtbase.out}|${qt5.qtbase.out}|g" Makefile
 
     runHook postConfigure
   '';

@@ -1,9 +1,11 @@
 {
   lib,
   stdenv,
+  buildPackages,
   fetchFromGitHub,
   pkg-config,
   qt5,
+  libglvnd,
 }:
 
 stdenv.mkDerivation rec {
@@ -22,8 +24,10 @@ stdenv.mkDerivation rec {
     qt5.qmake
   ];
 
-  buildInputs = [
-    qt5.qtbase
+  buildInputs = [ ];
+
+  depsBuildBuild = lib.optionals (stdenv.buildPlatform != stdenv.hostPlatform) [
+    buildPackages.stdenv.cc
   ];
 
   dontWrapQtApps = true;
@@ -35,7 +39,20 @@ stdenv.mkDerivation rec {
     sed -i 's@pkgconfig-qt$${QT_MAJOR_VERSION}@pkgconfig@g' src/src.pro
     sed -i 's@$$\[QT_INSTALL_PREFIX\]/share/qt$${QT_MAJOR_VERSION}/mkspecs/features@/usr/lib/qt5/mkspecs/features@g' src/src.pro
 
-    qmake src/src.pro
+    ${buildPackages.qt5.qtbase.dev}/bin/qmake src/src.pro \
+      "QMAKE_CC=${stdenv.cc.targetPrefix}gcc" \
+      "QMAKE_CXX=${stdenv.cc.targetPrefix}g++" \
+      "QMAKE_LINK=${stdenv.cc.targetPrefix}g++" \
+      "QMAKE_AR=${stdenv.cc.targetPrefix}ar cqs" \
+      "QMAKE_CFLAGS+=-I${qt5.qtbase.dev}/include" \
+      "QMAKE_CXXFLAGS+=-I${qt5.qtbase.dev}/include" \
+      "QMAKE_INCDIR_QT=${qt5.qtbase.dev}/include" \
+      "QMAKE_LIBDIR_QT=${qt5.qtbase.out}/lib" \
+      "QMAKE_LIBS_QT=${qt5.qtbase.out}/lib/libQt5DBus.so ${qt5.qtbase.out}/lib/libQt5Core.so -lpthread"
+
+    # qmake still injects native Qt runtime paths in cross mode; rewrite to target Qt libs.
+    sed -i "s|${buildPackages.qt5.qtbase.out}|${qt5.qtbase.out}|g" Makefile
+    sed -i "s|${buildPackages.libglvnd}|${libglvnd}|g" Makefile
 
     runHook postConfigure
   '';

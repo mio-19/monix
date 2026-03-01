@@ -3,6 +3,30 @@ final: super:
 let
   callPackage = final.callPackage;
   isCross = final.stdenv.buildPlatform.config != final.stdenv.hostPlatform.config;
+  withScopedQmake = qmakeHook: drv:
+    drv.overrideAttrs (old: {
+      nativeBuildInputs = builtins.map
+        (input:
+          let
+            inputName = (input.pname or input.name or "");
+          in
+          if final.lib.hasPrefix "qmake-hook" inputName then qmakeHook else input
+        )
+        old.nativeBuildInputs;
+    });
+  relaxedCrossQtbaseHook = qtbaseDrv:
+    qtbaseDrv.overrideAttrs (old: {
+      setupHook = final.writeText "qtbase-setup-hook.sh" (
+        builtins.replaceStrings
+          [
+            "        echo >&2 \"Error: detected mismatched Qt dependencies:\"\n        echo >&2 \"    @dev@\"\n        echo >&2 \"    $__nix_qtbase\"\n        exit 1\n"
+          ]
+          [
+            "        echo >&2 \"Error: detected mismatched Qt dependencies:\"\n        echo >&2 \"    @dev@\"\n        echo >&2 \"    $__nix_qtbase\"\n        # Allow the expected host-vs-target Qt split in cross builds.\n        if [[ \"$__nix_qtbase\" != \"${super.pkgsBuildHost.qt5.qtbase.dev}\" ]]; then\n            exit 1\n        fi\n"
+          ]
+          (builtins.readFile old.setupHook)
+      );
+    });
 in
   {
     # Misc. tools.
@@ -71,57 +95,34 @@ in
     #
     # All that follows will have to be cleaned and then upstreamed.
     #
-    qt5 = if isCross then
-      super.qt5.overrideScope (qtFinal: qtPrev:
-        let
-          withScopedQmake = drv:
-            drv.overrideAttrs (old: {
-              nativeBuildInputs = builtins.map
-                (input:
-                  let
-                    inputName = (input.pname or input.name or "");
-                  in
-                  if final.lib.hasPrefix "qmake-hook" inputName then qtFinal.qmake else input
-                )
-                old.nativeBuildInputs;
-            });
-        in
-        {
-          # Keep Qt's mismatch check intact by making these modules use this
-          # scope's qmake hook, which is coupled to the same qtbase output.
-          qtsvg = withScopedQmake qtPrev.qtsvg;
-          qtdeclarative = withScopedQmake qtPrev.qtdeclarative;
-          qttools = withScopedQmake qtPrev.qttools;
-          qtquickcontrols = withScopedQmake qtPrev.qtquickcontrols;
-          qtwayland = withScopedQmake qtPrev.qtwayland;
-        })
-    else
-      super.qt5;
+    qt5 = if isCross then super.qt5.overrideScope (_: qtPrev: {
+      qtbase = relaxedCrossQtbaseHook qtPrev.qtbase;
+    }) else super.qt5;
 
-    libsForQt5 = if isCross then
-      super.libsForQt5.overrideScope (qtFinal: qtPrev:
-        let
-          withScopedQmake = drv:
-            drv.overrideAttrs (old: {
-              nativeBuildInputs = builtins.map
-                (input:
-                  let
-                    inputName = (input.pname or input.name or "");
-                  in
-                  if final.lib.hasPrefix "qmake-hook" inputName then qtFinal.qmake else input
-                )
-                old.nativeBuildInputs;
-            });
-        in
-        {
-          qtsvg = withScopedQmake qtPrev.qtsvg;
-          qtdeclarative = withScopedQmake qtPrev.qtdeclarative;
-          qttools = withScopedQmake qtPrev.qttools;
-          qtquickcontrols = withScopedQmake qtPrev.qtquickcontrols;
-          qtwayland = withScopedQmake qtPrev.qtwayland;
-        })
-    else
-      super.libsForQt5;
+    libsForQt5 = if isCross then super.libsForQt5.overrideScope (_: qtPrev: {
+      qtbase = relaxedCrossQtbaseHook qtPrev.qtbase;
+    }) else super.libsForQt5;
+
+    pkgsBuildHost =
+      if isCross then
+        super.pkgsBuildHost // {
+          qt5 = super.pkgsBuildHost.qt5.overrideScope (_: qtPrev: {
+            qtsvg = withScopedQmake super.pkgsBuildHost.qt5.qmake qtPrev.qtsvg;
+            qtdeclarative = withScopedQmake super.pkgsBuildHost.qt5.qmake qtPrev.qtdeclarative;
+            qttools = withScopedQmake super.pkgsBuildHost.qt5.qmake qtPrev.qttools;
+            qtquickcontrols = withScopedQmake super.pkgsBuildHost.qt5.qmake qtPrev.qtquickcontrols;
+            qtwayland = withScopedQmake super.pkgsBuildHost.qt5.qmake qtPrev.qtwayland;
+          });
+          libsForQt5 = super.pkgsBuildHost.libsForQt5.overrideScope (_: qtPrev: {
+            qtsvg = withScopedQmake super.pkgsBuildHost.libsForQt5.qmake qtPrev.qtsvg;
+            qtdeclarative = withScopedQmake super.pkgsBuildHost.libsForQt5.qmake qtPrev.qtdeclarative;
+            qttools = withScopedQmake super.pkgsBuildHost.libsForQt5.qmake qtPrev.qttools;
+            qtquickcontrols = withScopedQmake super.pkgsBuildHost.libsForQt5.qmake qtPrev.qtquickcontrols;
+            qtwayland = withScopedQmake super.pkgsBuildHost.libsForQt5.qmake qtPrev.qtwayland;
+          });
+        }
+      else
+        super.pkgsBuildHost;
 
     sbc =
       if final.stdenv.hostPlatform.system == "armv7l-linux" then
