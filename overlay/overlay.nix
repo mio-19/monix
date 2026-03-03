@@ -134,6 +134,26 @@ in
       else
         super.sbc;
 
+    openblas =
+      if final.stdenv.hostPlatform.system == "armv7l-linux" then
+        super.openblas.overrideAttrs (old: {
+          # Force cross mode so OpenBLAS does not try to run x86 getarch/cpuid probes
+          # while building ARMv7, which fails in cpuid.S during this build.
+          makeFlags = (builtins.filter
+            (f: !(final.lib.hasPrefix "CROSS=" f) && !(final.lib.hasPrefix "HOSTCC=" f))
+            (old.makeFlags or [])) ++ [ "CROSS=1" ];
+          preBuild = (old.preBuild or "") + ''
+            # Build host tools (e.g. getarch) with build-platform compiler.
+            makeFlagsArray+=("HOSTCC=''${CC_FOR_BUILD}")
+          '';
+          postPatch = (old.postPatch or "") + ''
+            # ARM gas rejects @progbits here; this section is non-functional for our build.
+            substituteInPlace cpuid.S --replace '.section        .note.GNU-stack,"",@progbits' ""
+          '';
+        })
+      else
+        super.openblas;
+
     # Things specific to mobile-nixos.
     # Not necessarily internals, but they probably won't go into <nixpkgs>.
     mobile-nixos = {
